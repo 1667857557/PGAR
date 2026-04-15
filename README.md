@@ -22,6 +22,8 @@
 
 ## 2) 主要函数
 
+> 代码组织：每个流程函数放在独立的 `R/run_*.R` 文件中，便于按功能维护。
+
 ### 2.1 预处理函数（对应你上传代码的各步骤封装）
 
 - `prepare_gwas_post_input()`
@@ -37,6 +39,16 @@
 - `run_ldsc(gwas1_mapped_file, gwas2_mapped_file, ...)`
 - `run_Mapgen(gwas_mapped_file, ...)`
 - `run_lcv(gwas1_mapped_file, gwas2_mapped_file, ...)`
+- `run_flames(gwas_mapped_file, ...)`
+- `run_t_sem(gwas_mapped_files, ...)`
+- `run_p_sem(gwas_mapped_files, ...)`
+- `run_gna(gwas1_mapped_file, gwas2_mapped_file, ...)`
+- `run_parallel_lava(gwas_mapped_files, ...)`
+- `run_parallel_mixer(gwas_mapped_files, ...)`
+- `run_ccgwas(case_gwas_mapped_file, control_gwas_mapped_file, ...)`
+- `run_multivariate_gwas(gwas_mapped_files, ...)`
+- `run_clump_fine_mapping(gwas_mapped_file, ...)`
+- `run_scdrs(gwas_mapped_file, ...)`
 
 ## 3) 示例
 
@@ -79,4 +91,26 @@ ldsc_log <- run_ldsc(
 )
 ```
 
-> 注意：`run_hdl` / `run_lcv` 依赖你本地脚本中的 `HDL.rg` / `RunLCV`；`run_ldsc` / `run_Mapgen` 依赖外部命令行工具。
+
+## 4) 更多流程
+
+```r
+run_flames(
+  gwas_mapped_file = "data/trait1.rsid_mapped.tsv",
+  flames_script = "scripts/flames_pipeline.R"
+)
+
+run_parallel_lava(
+  gwas_mapped_files = c("data/trait1.rsid_mapped.tsv", "data/trait2.rsid_mapped.tsv"),
+  lava_script = "scripts/lava_parallel.R",
+  cores = 8
+)
+
+run_clump_fine_mapping(
+  gwas_mapped_file = "data/trait1.rsid_mapped.tsv",
+  plink_bin = "plink",
+  ref_bfile = "refs/1kg_eur"
+)
+```
+
+> 注意：新增流程函数默认会优先调用你本地脚本中的 `run_*_pipeline`，若不存在则回退为 `Rscript` / 外部命令调用。
