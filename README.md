@@ -22,6 +22,16 @@
 
 ## 2) 主要函数
 
+### 2.1 预处理函数（对应你上传代码的各步骤封装）
+
+- `prepare_gwas_post_input()`
+- `prepare_gwas_for_coloc()`
+- `prepare_gwas_for_ldsc()`
+- `prepare_gwas_for_hdl_lcv()`
+- `prepare_gwas_for_mapgen()`
+
+### 2.2 分析函数
+
 - `run_coloc(gwas_mapped_file, eqtl_dir, ...)`
 - `run_hdl(gwas1_mapped_file, gwas2_mapped_file, ...)`
 - `run_ldsc(gwas1_mapped_file, gwas2_mapped_file, ...)`

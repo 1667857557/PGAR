@@ -2,6 +2,8 @@
 #'
 #' @param gwas1_mapped_file First trait GWAS (rsid mapping format).
 #' @param gwas2_mapped_file Second trait GWAS (rsid mapping format).
+#' @param gwas1_colmap Optional column mapping for trait1.
+#' @param gwas2_colmap Optional column mapping for trait2.
 #' @param lcv_script Optional path to script that defines RunLCV.
 #' @param output_dir Output directory.
 #' @return LCV result object.
@@ -10,14 +12,14 @@ run_lcv <- function(
   gwas1_mapped_file,
   gwas2_mapped_file,
   lcv_script = NULL,
-  output_dir = "results/lcv"
+  output_dir = "results/lcv",
+  gwas1_colmap = list(),
+  gwas2_colmap = list()
 ) {
   ensure_dir(output_dir)
 
-  gwas1 <- read_mapped_gwas(gwas1_mapped_file)
-  gwas2 <- read_mapped_gwas(gwas2_mapped_file)
-  validate_mapped_gwas(gwas1)
-  validate_mapped_gwas(gwas2)
+  gwas1 <- prepare_gwas_for_hdl_lcv(gwas1_mapped_file, colmap = gwas1_colmap)
+  gwas2 <- prepare_gwas_for_hdl_lcv(gwas2_mapped_file, colmap = gwas2_colmap)
 
   if (!is.null(lcv_script)) {
     source(lcv_script)

@@ -7,6 +7,8 @@
 #' @param snplist Path to HapMap3 snplist used by munge.
 #' @param ld_ref Path prefix for LD reference panel.
 #' @param w_ld Path prefix for LDSC regression weights.
+#' @param gwas1_colmap Optional column mapping for trait1.
+#' @param gwas2_colmap Optional column mapping for trait2.
 #' @param out_prefix Output prefix.
 #' @param python_bin Python executable.
 #' @param extra_args Extra CLI args for ldsc.
@@ -20,6 +22,8 @@ run_ldsc <- function(
   snplist,
   ld_ref,
   w_ld,
+  gwas1_colmap = list(),
+  gwas2_colmap = list(),
   out_prefix = "results/ldsc/ldsc",
   python_bin = "python",
   extra_args = character(0)
@@ -27,21 +31,17 @@ run_ldsc <- function(
   out_dir <- dirname(out_prefix)
   ensure_dir(out_dir)
 
-  gwas1 <- read_mapped_gwas(gwas1_mapped_file)
-  gwas2 <- read_mapped_gwas(gwas2_mapped_file)
-  validate_mapped_gwas(gwas1)
-  validate_mapped_gwas(gwas2)
+  x1 <- prepare_gwas_for_ldsc(gwas1_mapped_file, colmap = gwas1_colmap)
+  x2 <- prepare_gwas_for_ldsc(gwas2_mapped_file, colmap = gwas2_colmap)
 
-  prep_for_ldsc <- function(dat, prefix) {
-    x <- dat[, c("rsid", "effect_allele", "other_allele", "pval", "n", "z")]
-    names(x) <- c("SNP", "A1", "A2", "P", "N", "Z")
+  prep_for_ldsc <- function(x, prefix) {
     raw <- file.path(out_dir, paste0(prefix, "_raw.tsv"))
     utils::write.table(x, raw, sep = "\t", row.names = FALSE, quote = FALSE)
     raw
   }
 
-  raw1 <- prep_for_ldsc(gwas1, "trait1")
-  raw2 <- prep_for_ldsc(gwas2, "trait2")
+  raw1 <- prep_for_ldsc(x1, "trait1")
+  raw2 <- prep_for_ldsc(x2, "trait2")
 
   munge_out1 <- file.path(out_dir, "trait1")
   munge_out2 <- file.path(out_dir, "trait2")

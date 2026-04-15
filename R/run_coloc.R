@@ -34,8 +34,7 @@ run_coloc <- function(
 
   ensure_dir(output_dir)
 
-  gwas <- read_mapped_gwas(gwas_mapped_file, colmap = gwas_colmap)
-  validate_mapped_gwas(gwas)
+  gwas_sub <- prepare_gwas_for_coloc(gwas_mapped_file, colmap = gwas_colmap)
 
   eqtl_files <- list.files(eqtl_dir, full.names = TRUE)
   eqtl_files <- eqtl_files[file.info(eqtl_files)$isdir %in% FALSE]
@@ -57,9 +56,6 @@ run_coloc <- function(
     }
 
     assert_columns(eqtl, c("snp", "beta", "se", "p"), basename(eqtl_file))
-
-    gwas_sub <- gwas[, c("rsid", "beta", "se", "pval", "n")]
-    names(gwas_sub) <- c("snp", "beta", "se", "p", "n")
 
     merged <- merge(gwas_sub, eqtl, by = "snp", suffixes = c("_gwas", "_eqtl"))
     if (nrow(merged) < min_overlap) {
