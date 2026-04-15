@@ -1,10 +1,10 @@
-#' Run full coloc workflow from GWAS and local eQTL folder
+#' Run full coloc workflow on rsid-mapped GWAS + local eQTL folder
 #'
-#' @param gwas_file GWAS summary statistics file.
+#' @param gwas_mapped_file GWAS文件（必须匹配 rsid mapping 输出格式）。
 #' @param eqtl_dir Directory containing eQTL summary files.
 #' @param output_dir Output folder.
-#' @param gwas_colmap Named list for GWAS column mapping.
-#' @param eqtl_colmap Named list for eQTL column mapping.
+#' @param gwas_colmap 可选，GWAS列名映射。
+#' @param eqtl_colmap eQTL列名映射（需至少映射到 SNP/beta/se/p）。
 #' @param gwas_type "quant" or "cc".
 #' @param eqtl_type "quant" or "cc".
 #' @param min_overlap Minimum overlapping SNP count to run coloc.
@@ -12,7 +12,7 @@
 #' @return data.frame of coloc summary per eQTL file.
 #' @export
 run_coloc <- function(
-  gwas_file,
+  gwas_mapped_file,
   eqtl_dir,
   output_dir = "results/coloc",
   gwas_colmap = list(),
@@ -34,8 +34,7 @@ run_coloc <- function(
 
   ensure_dir(output_dir)
 
-  gwas <- read_sumstats(gwas_file, colmap = gwas_colmap)
-  assert_columns(gwas, c("snp", "beta", "se", "p"), "GWAS")
+  gwas_sub <- prepare_gwas_for_coloc(gwas_mapped_file, colmap = gwas_colmap)
 
   eqtl_files <- list.files(eqtl_dir, full.names = TRUE)
   eqtl_files <- eqtl_files[file.info(eqtl_files)$isdir %in% FALSE]
@@ -48,9 +47,17 @@ run_coloc <- function(
   for (i in seq_along(eqtl_files)) {
     eqtl_file <- eqtl_files[[i]]
     eqtl <- read_sumstats(eqtl_file, colmap = eqtl_colmap)
+
+    if (!"snp" %in% names(eqtl) && "rsid" %in% names(eqtl)) {
+      eqtl$snp <- eqtl$rsid
+    }
+    if (!"p" %in% names(eqtl) && "pval" %in% names(eqtl)) {
+      eqtl$p <- eqtl$pval
+    }
+
     assert_columns(eqtl, c("snp", "beta", "se", "p"), basename(eqtl_file))
 
-    merged <- merge(gwas, eqtl, by = "snp", suffixes = c("_gwas", "_eqtl"))
+    merged <- merge(gwas_sub, eqtl, by = "snp", suffixes = c("_gwas", "_eqtl"))
     if (nrow(merged) < min_overlap) {
       results[[i]] <- data.frame(
         eqtl_file = basename(eqtl_file),
@@ -71,7 +78,7 @@ run_coloc <- function(
       varbeta = merged$se_gwas^2,
       snp = merged$snp,
       pvalues = merged$p_gwas,
-      N = if ("n_gwas" %in% names(merged)) merged$n_gwas else NULL,
+      N = merged$n_gwas,
       type = gwas_type
     )
 

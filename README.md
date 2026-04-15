@@ -1,46 +1,82 @@
 # PGAR
 
-一个用于 **GWAS-post** 分析的 R 包脚手架，统一封装多种分析流程：
+一个用于 **GWAS-post** 分析的 R 包脚手架，核心约定是：
 
-- `run_coloc`: 从原始 GWAS summary + 本地 eQTL 文件夹批量跑共定位。
-- `run_hdl`: 跑 HDL 遗传相关分析。
-- `run_ldsc`: 调用 `ldsc.py` 跑 LDSC rg。
-- `run_Mapgen`: 调用 MAPGEN 可执行程序。
-- `run_lcv`: 跑 LCV 因果方向分析。
+> 所有 post 分析函数都使用 **`rsid mapping.R` 处理后的 GWAS 数据格式** 作为输入。
 
-## 安装
+## 1) 统一的 GWAS 输入格式（rsid mapping 输出）
 
-```r
-devtools::install_local(".")
-```
+列名（不区分大小写）应可映射到：
 
-## 示例
+- `rsid`
+- `chr`
+- `pos`
+- `effect_allele`
+- `other_allele`
+- `beta`
+- `se`
+- `pval`
+- `n`
+
+包内 `read_mapped_gwas()` / `validate_mapped_gwas()` 会进行校验。
+
+## 2) 主要函数
+
+### 2.1 预处理函数（对应你上传代码的各步骤封装）
+
+- `prepare_gwas_post_input()`
+- `prepare_gwas_for_coloc()`
+- `prepare_gwas_for_ldsc()`
+- `prepare_gwas_for_hdl_lcv()`
+- `prepare_gwas_for_mapgen()`
+
+### 2.2 分析函数
+
+- `run_coloc(gwas_mapped_file, eqtl_dir, ...)`
+- `run_hdl(gwas1_mapped_file, gwas2_mapped_file, ...)`
+- `run_ldsc(gwas1_mapped_file, gwas2_mapped_file, ...)`
+- `run_Mapgen(gwas_mapped_file, ...)`
+- `run_lcv(gwas1_mapped_file, gwas2_mapped_file, ...)`
+
+## 3) 示例
 
 ```r
 library(PGAR)
 
+# 读取并校验 rsid mapping 输出
+x <- read_mapped_gwas("data/trait1.rsid_mapped.tsv")
+validate_mapped_gwas(x)
+
+# coloc: mapped GWAS + eQTL目录
 res_coloc <- run_coloc(
-  gwas_file = "data/gwas_sumstats.tsv",
-  eqtl_dir = "data/eqtl",
-  output_dir = "results/coloc",
-  gwas_colmap = list(SNP = "rsid", beta = "BETA", se = "SE", p = "P"),
-  eqtl_colmap = list(SNP = "snp", beta = "beta", se = "se", p = "pval")
+  gwas_mapped_file = "data/trait1.rsid_mapped.tsv",
+  eqtl_dir = "data/eqtl"
 )
 
+# HDL/LCV: 两个mapped GWAS
 res_hdl <- run_hdl(
-  gwas1_file = "data/trait1.tsv",
-  gwas2_file = "data/trait2.tsv",
+  gwas1_mapped_file = "data/trait1.rsid_mapped.tsv",
+  gwas2_mapped_file = "data/trait2.rsid_mapped.tsv",
   hdl_script = "scripts/HDL.R",
   piecewise_path = "refs/UKB_imputed_SVD_eigen99_extraction"
 )
 
+res_lcv <- run_lcv(
+  gwas1_mapped_file = "data/trait1.rsid_mapped.tsv",
+  gwas2_mapped_file = "data/trait2.rsid_mapped.tsv",
+  lcv_script = "scripts/LCV.R"
+)
+
+# LDSC: mapped GWAS -> munge -> ldsc
 ldsc_log <- run_ldsc(
-  munged_sumstats_1 = "data/trait1.sumstats.gz",
-  munged_sumstats_2 = "data/trait2.sumstats.gz",
+  gwas1_mapped_file = "data/trait1.rsid_mapped.tsv",
+  gwas2_mapped_file = "data/trait2.rsid_mapped.tsv",
+  munge_py = "~/tools/ldsc/munge_sumstats.py",
   ldsc_py = "~/tools/ldsc/ldsc.py",
+  snplist = "~/tools/ldsc/w_hm3.snplist",
   ld_ref = "~/tools/ldsc/eur_w_ld_chr/",
   w_ld = "~/tools/ldsc/eur_w_ld_chr/"
 )
 ```
 
-> 注意：`run_hdl` / `run_lcv` 默认依赖你本地已加载的脚本函数（例如 `HDL.rg`, `RunLCV`）；`run_ldsc` / `run_Mapgen` 依赖外部命令行工具。
+> 注意：`run_hdl` / `run_lcv` 依赖你本地脚本中的 `HDL.rg` / `RunLCV`；`run_ldsc` / `run_Mapgen` 依赖外部命令行工具。
