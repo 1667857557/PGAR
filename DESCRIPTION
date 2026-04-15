@@ -1,0 +1,21 @@
+Package: PGAR
+Type: Package
+Title: Post-GWAS Analysis Runner
+Version: 0.1.0
+Authors@R: 
+    person(given = "PGAR",
+           family = "Team",
+           role = c("aut", "cre"),
+           email = "devnull@example.com")
+Description: Utilities to run common post-GWAS workflows including coloc,
+    HDL, LDSC, MAPGEN and LCV from one consistent R API.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.2
+Imports:
+    utils,
+    stats,
+    tools
+Suggests:
+    coloc
